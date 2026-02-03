@@ -6,6 +6,8 @@
 #include <math.h>
 #include <string.h>
 #include <sys/timeb.h>
+#include <pthread.h>
+
 
 /* read timer in second */
 double read_timer() {
@@ -24,6 +26,15 @@ double read_timer_ms() {
 #define REAL float
 #define VECTOR_LENGTH 102400
 
+typedef struct {
+    int thread_id;
+    int start;      // Starting index in the arrays
+    int end;        // Ending index (exclusive)
+    REAL *Y;        // Pointer to Y array
+    REAL *X;        // Pointer to X array
+    REAL a;         // Scalar value
+} thread_data_t;
+
 /* initialize a vector with random floating point numbers */
 void init(REAL A[], int N) {
     int i;
@@ -38,14 +49,50 @@ void axpy_kernel(int N, REAL *Y, REAL *X, REAL a) {
         Y[i] += a * X[i];
 }
 
+void* axpy_thread_func(void* args) {
+    thread_data_t* targs = (thread_data_t*) args;
+
+    for (int i = targs->start; i < targs->end; i++) {
+        targs->Y[i] += targs->a * targs->X[i];
+    }
+
+    return NULL;
+}
+
 /**
  * Your implementation of pthread version of axpy computation using loop chunking and worksharing
  * by dividing the total number of iterations amount by the num_threads for parallel computing.
  */
 void axpy_kernel_threading(int N, REAL *Y, REAL *X, REAL a, int num_threads) {
-    int i;
-    for (i = 0; i < N; ++i)
-        Y[i] += a * X[i];
+    pthread_t threads[num_threads];
+    thread_data_t thread_data[num_threads];
+
+    int chunk_size = N / num_threads;
+    int remainder = N % num_threads;
+
+    int current_start = 0;
+
+    for (int i = 0; i < num_threads; i++) {
+        thread_data[i].thread_id = i;
+        thread_data[i].start = current_start;
+
+        // Give first 'remainder' threads one extra iteration
+        int my_chunk = chunk_size + (i < remainder ? 1 : 0);
+        thread_data[i].end = current_start + my_chunk;
+
+        thread_data[i].Y = Y;
+        thread_data[i].X = X;
+        thread_data[i].a = a;
+
+        pthread_create(&threads[i], NULL, axpy_thread_func, &thread_data[i]);
+
+        current_start += my_chunk;
+    }
+
+    // Wait for all threads to complete
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
 }
 
 int main(int argc, char *argv[]) {
