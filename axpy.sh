@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --partition=Orion
 #SBATCH --job-name=axpy_pthread
 #SBATCH --output=axpy_%j.out
 #SBATCH --error=axpy_%j.err
@@ -6,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
-#SBATCH --mem=4G
+#SBATCH --mem=64G
 
 # Compile
 make clean
