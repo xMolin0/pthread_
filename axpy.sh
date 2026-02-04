@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --partition=Orion
+#SBATCH --partition=Centaurus
 #SBATCH --job-name=axpy_pthread
 #SBATCH --output=axpy_%j.out
 #SBATCH --error=axpy_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=36
 #SBATCH --time=00:30:00
 #SBATCH --mem=64G
 
